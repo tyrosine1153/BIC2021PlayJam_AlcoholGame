@@ -4,9 +4,8 @@ using UnityEngine.SceneManagement;
 public enum SceneType
 {
     Title,
-    Lobby,
-    Ready,
-    InGame,
+    InRound,
+    Ending
 }
 
 public class SceneManagerEx : Singleton<SceneManagerEx>
