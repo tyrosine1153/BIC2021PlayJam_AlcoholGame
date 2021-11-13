@@ -8,12 +8,14 @@ namespace UI
 {
     public class InRoundCanvas : MonoBehaviour
     {
+        [Header("Resources")]
         [SerializeField] private Sprite[] backGrounds;
         
+        [Header("UI")]
         [SerializeField] private Image backGroundImage;
         [SerializeField] private Image fadeImage;
         [SerializeField] private Text roundText;
-
+        
         [SerializeField] private GameObject[] gameUIs;
 
         public void OnInitRound(int roundCount)
@@ -39,10 +41,15 @@ namespace UI
             yield return new WaitForSeconds(3f);
         }
 
-        public void OnInitGame(GameType gameType)
+        public void EnableGameUI(GameType gameType)
         {
             gameUIs[(int)gameType].SetActive(true);
-            // 대충 시작하는 이미지
+            // 대충 시작하는 애니메이션
+        }
+
+        public void OnClickTimingGameButton()
+        {
+            GameManager.Instance.isPlayerUpInTimingGame = true;
         }
     }
 }

@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections;
+using System.Linq;
 using UI;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using Random = UnityEngine.Random;
 
 public struct Player
@@ -26,9 +29,34 @@ public enum GameType
     SpinningBomb,
 }
 
+public struct GameProbabilityInRound
+{
+    public float TimingGame;
+    public float Clap369;
+    public float BaskinRobbins31;
+    public int[] Cleopatra;
+    public float[] SpinningBomb;
+    
+    public GameProbabilityInRound(float timingGame, float clap369, float baskinRobbins31, int[] cleopatra, float[] spinningBomb)
+    {
+        TimingGame = timingGame;
+        Clap369 = clap369;
+        BaskinRobbins31 = baskinRobbins31;
+        Cleopatra = cleopatra;
+        SpinningBomb = spinningBomb;
+    }
+}
+
 public class GameManager : Singleton<GameManager>
 {
     private static readonly Player DefaultPlayer = new Player(3);
+
+    private static readonly GameProbabilityInRound[] gameProb =
+    {
+        new GameProbabilityInRound(30, 90, 50, new[] {6, 12}, new[] {1f, 5f}),
+        new GameProbabilityInRound(20, 93, 70, new[] {7, 13}, new[] {0.5f, 3f}),
+        new GameProbabilityInRound(10, 97, 90, new[] {8, 14}, new[] {0.5f, 2f})
+    };
 
     public int roundCount = 1;
 
@@ -37,10 +65,10 @@ public class GameManager : Singleton<GameManager>
     public GameType gameType;
 
     private InRoundCanvas _inRoundCanvas;
+    private int _nextFirstPlayer = 0;
 
-    public void InitRound()
+    public void StartRound()
     {
-        Debug.Log("InitRound");
         playerCount = 8;
         players = new Player[8];
         players[0] = DefaultPlayer;
@@ -50,85 +78,15 @@ public class GameManager : Singleton<GameManager>
             players[i] = new Player(Random.Range(roundCount, roundCount + 2));
         }
 
-        Invoke(nameof(DelayedInitRound), 1f);
+        Invoke(nameof(DelayedStartRound), 1f);
     }
 
-    private void DelayedInitRound()
+    private void DelayedStartRound()
     {
         _inRoundCanvas = FindObjectOfType<InRoundCanvas>();
-        Debug.Log(_inRoundCanvas == null);
         _inRoundCanvas.OnInitRound(roundCount);
-        
-        StartGame();
-    }
 
-    private void StartGame()
-    {
-        // 인원이 2명 이하일 경우 눈치게임은 제외
-        var gameTypeIndex = 0;
-            // = Random.Range(playerCount > 2 ? 0 : 1, Enum.GetValues(typeof(GameType)).Length);
-
-        _inRoundCanvas.OnInitGame((GameType) gameTypeIndex);
-
-        switch ((GameType) gameTypeIndex)
-        {
-            case GameType.TimingGame:
-                TimingGame();
-                break;
-            case GameType.Clap369:
-                break;
-
-            case GameType.BaskinRobbins31:
-                break;
-
-            case GameType.Cleopatra:
-                break;
-
-            case GameType.SpinningBomb:
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-        StartCoroutine(_inRoundCanvas.FadeIn());
-    }
-
-    // 입력 : 게임이 끝나고 벌칙을 받을 플레이어들 목록
-    public void EndGame(int[] failPlayers)
-    {
-        // **게임 UI 끄기
-        
-        foreach (var index in failPlayers)
-        {
-            players[index].CurrentAlcoholCount++;
-            // **벌칙 애니메이션
-
-            // 플레이어 탈락
-            if (players[index].AlcoholCapacity <= players[index].CurrentAlcoholCount)
-            {
-                players[index].IsFail = true;
-                playerCount--;
-                // **탈락 애니메이션
-
-                if (index == 0)
-                {
-                    FailRound();
-                }
-                else if (playerCount <= 1)
-                {
-                    EndRound();
-                }
-            }
-            else if (index == 0)
-            {
-                // **플레이어 주량 패널티
-            }
-        }
-
-        // ** 잠시 후 새 게임 시작, 페이드 아웃
-        Invoke(nameof(StartGame), 3);
-        StartCoroutine(_inRoundCanvas.FadeOut());
+        Invoke(nameof(StartGame), 3f);
     }
 
     private void FailRound()
@@ -154,18 +112,320 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
+    private void StartGame()
+    {
+        // 인원이 2명 이하일 경우 눈치게임은 제외
+        var gameTypeIndex = 0;
+        // = Random.Range(playerCount > 2 ? 0 : 1, Enum.GetValues(typeof(GameType)).Length);
+
+        _inRoundCanvas.EnableGameUI((GameType) gameTypeIndex);
+
+        StartCoroutine(_inRoundCanvas.FadeIn());
+        switch ((GameType) gameTypeIndex)
+        {
+            case GameType.TimingGame:
+                StartCoroutine(TimingGame());
+                break;
+            case GameType.Clap369:
+                StartCoroutine(Clap369());
+                break;
+
+            case GameType.BaskinRobbins31:
+                StartCoroutine(BaskinRobbins31());
+                break;
+
+            case GameType.Cleopatra:
+                StartCoroutine(Cleopatra());
+                break;
+
+            case GameType.SpinningBomb:
+                StartCoroutine(SpinningBomb());
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+    }
+
+    // 입력 : 게임이 끝나고 벌칙을 받을 플레이어들 목록
+    private void EndGame(int[] failPlayers)
+    {
+        Debug.Log("Game end!");
+
+        // **게임 UI 끄기
+
+        foreach (var index in failPlayers)
+        {
+            players[index].CurrentAlcoholCount++;
+            // **벌칙 애니메이션
+
+            // 도전자 탈락
+            if (players[index].AlcoholCapacity <= players[index].CurrentAlcoholCount)
+            {
+                players[index].IsFail = true;
+                playerCount--;
+                // **탈락 애니메이션
+
+                if (index == 0)
+                {
+                    FailRound();
+                }
+                else if (playerCount <= 1)
+                {
+                    EndRound();
+                }
+            }
+            else if (index == 0)
+            {
+                // **플레이어 주량 패널티
+            }
+        }
+
+        // ** 잠시 후 새 게임 시작, 페이드 아웃
+        _nextFirstPlayer = failPlayers[Random.Range(0, failPlayers.Length)];
+        Invoke(nameof(StartGame), 3);
+        StartCoroutine(_inRoundCanvas.FadeOut());
+    }
+
+    private void EndGame(int failPlayer)
+    {
+        EndGame(new[] {failPlayer});
+    }
+
     #region Game
 
-    private void TimingGame()
-    {
+    private const float failTimeInterval = 0.5f;
+    public bool isPlayerUpInTimingGame;
 
+    private IEnumerator TimingGame()
+    {
+        yield return new WaitForSeconds(2f);
+        Debug.Log("Game Start");
+        var upSeq = Enumerable.Range(1, playerCount - 1).OrderBy(x => Random.Range(0, playerCount - 1))
+            .ToArray(); // 일어나는 순서 ex) 3, 2, 5, 7, 6, 4, 1 
+        var upTime = new float[playerCount]; // 일어나는 시간 (오름차순)
+        upTime[0] = -1f;
+        upTime[1] = RandomUtility.CalculateProbability(50f) ? 0.1f : Random.Range(failTimeInterval, 2f);
+        for (int i = 2; i < playerCount; i++)
+        {
+            upTime[i] = RandomUtility.CalculateProbability(gameProb[roundCount - 1].TimingGame)
+                ? upTime[i - 1] + Random.Range(0.1f, failTimeInterval)
+                : upTime[i - 1] + Random.Range(failTimeInterval, 2f);
+        }
+
+        var curUpSeq = 1; // 현재 일어나야 하는 순서
+
+        var curTime = 0f;
+        isPlayerUpInTimingGame = false;
+
+        // 현재 npc : upSeq[curUpSeq-1]
+        // 현재 시간 : upTime[curUpSeq]
+
+        while (true)
+        {
+            curTime += Time.deltaTime;
+            if (isPlayerUpInTimingGame) // 플레이어가 일어남
+            {
+                Debug.Log($"Player Up : {curTime}");
+                // **애니메이션
+
+                if (curTime - upTime[curUpSeq - 1] < failTimeInterval) // 시간이 겹침
+                {
+                    // **애니메이션
+                    Debug.Log($"겹칩! {curTime} {upTime[curUpSeq - 1]}");
+                    EndGame(new[] {0, upSeq[curUpSeq - 1]});
+                    yield break;
+                }
+
+                isPlayerUpInTimingGame = false;
+            }
+            else if (upTime[curUpSeq] < curTime) // NPC가 일어남
+            {
+                Debug.Log($"NPC{upSeq[curUpSeq - 1]} Up : {curTime} -> curUpSeq : {curUpSeq}");
+                // **애니메이션
+
+                if (upTime[curUpSeq] - upTime[curUpSeq - 1] < failTimeInterval && curUpSeq != 1) // 시간이 겹침
+                {
+                    // **애니메이션
+                    Debug.Log($"겹칩! {curTime} {upTime[curUpSeq - 1]}");
+                    EndGame(new[] {upSeq[curUpSeq - 1], upSeq[curUpSeq - 2]});
+                    yield break;
+                }
+
+                curUpSeq++;
+                if (curUpSeq == playerCount - 1 && isPlayerUpInTimingGame) // npc 걸림
+                {
+                    // ** 애니메이션
+                    Debug.Log($"마지막! {upSeq[curUpSeq - 1]}");
+                    EndGame(upSeq[curUpSeq]);
+                    yield break;
+                }
+
+                if (curUpSeq == playerCount && !isPlayerUpInTimingGame) // player 걸림
+                {
+                    // ** 애니메이션
+                    Debug.Log("마지막! Player");
+                    EndGame(0);
+                    yield break;
+                }
+            }
+
+            yield return null;
+        }
     }
 
-    private void Clap369()
+    private IEnumerator Clap369()
     {
+        var turn = _nextFirstPlayer;
+        var number = 0;
 
+        while (true)
+        {
+            var isCorrect = false;
+
+            ++number;
+            if (turn == 0) // 플레이어
+            {
+                // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+
+                if (true) isCorrect = true;
+            }
+            else // npc
+            {
+                // ** 애니메이션
+                if (RandomUtility.CalculateProbability(gameProb[roundCount - 1].Clap369))
+                {
+                    isCorrect = true;
+                }
+            }
+
+            if (!isCorrect)
+            {
+                EndGame(turn);
+                yield break;
+            }
+
+            turn = (++turn) % 8;
+            yield return new WaitForSeconds(3f);
+        }
     }
 
+    private IEnumerator BaskinRobbins31()
+    {
+        var turn = _nextFirstPlayer;
+        var number = 0;
+
+        while (true)
+        {
+            var add = 0;
+
+            if (turn == 0) // 플레이어
+            {
+                // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+
+                add = 2; // 예시
+            }
+            else // npc
+            {
+                var leftNumber = 31 - number;
+
+                if (leftNumber == 1)
+                {
+                    add = 1;
+                }
+                else if (leftNumber < playerCount + 3 &&
+                         RandomUtility.CalculateProbability(gameProb[roundCount - 1].Clap369))
+                {
+                    add = 3;
+                }
+                else if (leftNumber <= 3)
+                {
+                    add = Random.Range(1, leftNumber);
+                }
+                else
+                {
+                    add = Random.Range(1, 4);
+                }
+
+                // ** 애니메이션
+            }
+
+            number += add;
+            if (number >= 31)
+            {
+                EndGame(turn);
+                yield break;
+            }
+
+            turn = (++turn) % 8;
+            yield return new WaitForSeconds(3f);
+        }
+    }
+
+    private IEnumerator Cleopatra()
+    {
+        var turn = _nextFirstPlayer;
+        var goal = 5;
+
+        var soundLength = 3f;
+        while (true)
+        {
+            var pitch = 0;
+
+            // 노래 재생
+            if (turn == 0) // 플레이어
+            {
+                // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+
+                pitch = 2; // 예시
+            }
+            else // npc
+            {
+                var prob = gameProb[roundCount - 1].Cleopatra;
+                pitch = (int) Mathf.Round(soundLength * Random.Range(prob[0], prob[1]));
+
+                // ** 애니메이션
+                yield return new WaitForSeconds(soundLength);
+            }
+
+            if (goal < pitch) goal = pitch;
+            else
+            {
+                EndGame(turn);
+                yield break;
+            }
+
+            turn = (++turn) % 8;
+            yield return new WaitForSeconds(3f);
+        }
+    }
+
+    private IEnumerator SpinningBomb()
+    {
+        var turn = _nextFirstPlayer;
+        var goal = 5;
+        var oldTime = Time.time;
+
+        var limitTime = Random.Range(5f, 30f);
+        while (Time.time - oldTime > limitTime)
+        {
+            // 노래 재생
+            if (turn == 0) // 플레이어
+            {
+                // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+            }
+            else // npc
+            {
+                var prob = gameProb[roundCount - 1].SpinningBomb;
+                // ** 애니메이션
+                yield return new WaitForSeconds(Random.Range(prob[0], prob[1]));
+            }
+
+            turn = (++turn) % 8;
+        }
+
+        EndGame(--turn);
+    }
     #endregion
-
 }

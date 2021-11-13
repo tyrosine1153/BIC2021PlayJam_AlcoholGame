@@ -19,7 +19,7 @@ public class SceneManagerEx : Singleton<SceneManagerEx>
         SceneManager.LoadScene((int) type);
         if (type == SceneType.InRound)
         {
-            GameManager.Instance.InitRound();
+            GameManager.Instance.StartRound();
         }
     }
 }

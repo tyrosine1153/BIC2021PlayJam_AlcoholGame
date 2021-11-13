@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using DG.Tweening;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace UI
         [SerializeField] private float midScreenY = 540;
         
         private Coroutine _storyCoroutine;
-        
+
         public void OnClickStartButton()
         {
             _storyCoroutine = StartCoroutine(ShowStory());
