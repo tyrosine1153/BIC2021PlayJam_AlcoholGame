@@ -17,5 +17,9 @@ public class SceneManagerEx : Singleton<SceneManagerEx>
     public void LoadScene(SceneType type)
     {
         SceneManager.LoadScene((int) type);
+        if (type == SceneType.InRound)
+        {
+            GameManager.Instance.InitRound();
+        }
     }
 }
