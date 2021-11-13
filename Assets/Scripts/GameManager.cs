@@ -91,8 +91,8 @@ public class GameManager : Singleton<GameManager>
 
     private void FailRound()
     {
-        // 게임오버 UI
-        // main 으로 돌아가기
+        SceneManagerEx.Instance.isHappyEnding = false;
+        SceneManagerEx.Instance.LoadScene(SceneType.Ending);
     }
 
     private void EndRound()
@@ -107,7 +107,7 @@ public class GameManager : Singleton<GameManager>
         }
         else
         {
-            // 우승
+            SceneManagerEx.Instance.isHappyEnding = true;
             SceneManagerEx.Instance.LoadScene(SceneType.Ending);
         }
     }
@@ -160,9 +160,8 @@ public class GameManager : Singleton<GameManager>
         {
             players[index].CurrentAlcoholCount++;
             // **벌칙 애니메이션
-
-            // 도전자 탈락
-            if (players[index].AlcoholCapacity <= players[index].CurrentAlcoholCount)
+            
+            if (players[index].AlcoholCapacity <= players[index].CurrentAlcoholCount)  // 도전자 탈락
             {
                 players[index].IsFail = true;
                 playerCount--;
@@ -183,7 +182,7 @@ public class GameManager : Singleton<GameManager>
             }
         }
 
-        // ** 잠시 후 새 게임 시작, 페이드 아웃
+        // 잠시 후 새 게임 시작, 페이드 아웃
         _nextFirstPlayer = failPlayers[Random.Range(0, failPlayers.Length)];
         Invoke(nameof(StartGame), 3);
         StartCoroutine(_inRoundCanvas.FadeOut());
@@ -203,7 +202,19 @@ public class GameManager : Singleton<GameManager>
     {
         Debug.Log("TimingGame Start");
         yield return new WaitForSeconds(2f);
-        var upSeq = Enumerable.Range(1, playerCount - 1).OrderBy(x => Random.Range(0, playerCount - 1)).ToArray(); // 일어나는 순서 ex) 3, 2, 5, 7, 6, 4, 1 
+
+        var upSeq = new int[playerCount - 1];
+        var idx = 0;
+        for (int i = 1; i < playerCount; i++)
+        {
+            if (!players[i].IsFail)
+            {
+                upSeq[idx++] = i;
+                Debug.Log(i);
+            }
+        }
+
+        upSeq = upSeq.OrderBy(x => Random.Range(0, playerCount-1)).ToArray(); // 일어나는 순서 ex) 3, 2, 5, 7, 6, 4, 1 
         var upTime = new float[playerCount]; // 일어나는 시간 (오름차순)
         upTime[0] = -1f;
         upTime[1] = RandomUtility.CalculateProbability(50f) ? 0.1f : Random.Range(FailTimeInterval, 2f);
@@ -290,6 +301,12 @@ public class GameManager : Singleton<GameManager>
 
         while (true)
         {
+            if (players[turn].IsFail)
+            {
+                turn = (++turn) % 8;
+                continue;
+            }
+            
             var isCorrect = false;
 
             ++number;
@@ -338,6 +355,12 @@ public class GameManager : Singleton<GameManager>
 
         while (true)
         {
+            if (players[turn].IsFail)
+            {
+                turn = (++turn) % 8;
+                continue;
+            }
+            
             var add = 0;
 
             if (turn == 0) // 플레이어
@@ -403,6 +426,12 @@ public class GameManager : Singleton<GameManager>
         var soundLength = 3f;
         while (true)
         {
+            if (players[turn].IsFail)
+            {
+                turn = (++turn) % 8;
+                continue;
+            }
+            
             var pitch = 0;
 
             // 노래 재생
@@ -454,6 +483,12 @@ public class GameManager : Singleton<GameManager>
         var limitTime = Random.Range(5f, 30f);
         while (Time.time - oldTime > limitTime)
         {
+            if (players[turn].IsFail)
+            {
+                turn = (++turn) % 8;
+                continue;
+            }
+            
             // 노래 재생
             if (turn == 0) // 플레이어
             {

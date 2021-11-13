@@ -13,6 +13,7 @@ public class SceneManagerEx : Singleton<SceneManagerEx>
     public SceneType CurrentSceneType 
         => (SceneType)SceneManager.GetActiveScene().buildIndex;
 
+    public bool isHappyEnding;
 
     public void LoadScene(SceneType type)
     {
