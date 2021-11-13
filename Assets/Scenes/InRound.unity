@@ -367,24 +367,5 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1673013593379054104, guid: 34243aaae1112d24abb08f31f6f5a263, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1673013594186640533}
-    - target: {fileID: 1673013593379054104, guid: 34243aaae1112d24abb08f31f6f5a263, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnClickTimingGameButton
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 34243aaae1112d24abb08f31f6f5a263, type: 3}
---- !u!114 &1673013594186640533 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7327800453824624332, guid: 34243aaae1112d24abb08f31f6f5a263, type: 3}
-  m_PrefabInstance: {fileID: 1673013594186640532}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3989c36fa47b37e4e9b302918f868a2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Linq;
 using UI;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 using Random = UnityEngine.Random;
 
 public struct Player
@@ -62,11 +61,12 @@ public class GameManager : Singleton<GameManager>
 
     public int playerCount;
     public Player[] players;
-    public GameType gameType;
+    public GameType currentGameType;
 
     private InRoundCanvas _inRoundCanvas;
     private int _nextFirstPlayer = 0;
 
+    #region RoundSystem
     public void StartRound()
     {
         playerCount = 8;
@@ -115,10 +115,11 @@ public class GameManager : Singleton<GameManager>
     private void StartGame()
     {
         // 인원이 2명 이하일 경우 눈치게임은 제외
-        var gameTypeIndex = 0;
-        // = Random.Range(playerCount > 2 ? 0 : 1, Enum.GetValues(typeof(GameType)).Length);
-
-        _inRoundCanvas.EnableGameUI((GameType) gameTypeIndex);
+        var gameTypeIndex 
+            = Random.Range(playerCount > 2 ? 0 : 1, Enum.GetValues(typeof(GameType)).Length);
+        currentGameType = (GameType) gameTypeIndex;
+        
+        _inRoundCanvas.EnableGameUI(currentGameType);
 
         StartCoroutine(_inRoundCanvas.FadeIn());
         switch ((GameType) gameTypeIndex)
@@ -153,7 +154,7 @@ public class GameManager : Singleton<GameManager>
     {
         Debug.Log("Game end!");
 
-        // **게임 UI 끄기
+        _inRoundCanvas.DisableGameUI(currentGameType);
 
         foreach (var index in failPlayers)
         {
@@ -192,26 +193,25 @@ public class GameManager : Singleton<GameManager>
     {
         EndGame(new[] {failPlayer});
     }
+    #endregion
 
     #region Game
 
-    private const float failTimeInterval = 0.5f;
-    public bool isPlayerUpInTimingGame;
-
+    private const float FailTimeInterval = 0.5f;
+    [HideInInspector] public bool isPlayerUpInTimingGame;
     private IEnumerator TimingGame()
     {
+        Debug.Log("TimingGame Start");
         yield return new WaitForSeconds(2f);
-        Debug.Log("Game Start");
-        var upSeq = Enumerable.Range(1, playerCount - 1).OrderBy(x => Random.Range(0, playerCount - 1))
-            .ToArray(); // 일어나는 순서 ex) 3, 2, 5, 7, 6, 4, 1 
+        var upSeq = Enumerable.Range(1, playerCount - 1).OrderBy(x => Random.Range(0, playerCount - 1)).ToArray(); // 일어나는 순서 ex) 3, 2, 5, 7, 6, 4, 1 
         var upTime = new float[playerCount]; // 일어나는 시간 (오름차순)
         upTime[0] = -1f;
-        upTime[1] = RandomUtility.CalculateProbability(50f) ? 0.1f : Random.Range(failTimeInterval, 2f);
+        upTime[1] = RandomUtility.CalculateProbability(50f) ? 0.1f : Random.Range(FailTimeInterval, 2f);
         for (int i = 2; i < playerCount; i++)
         {
             upTime[i] = RandomUtility.CalculateProbability(gameProb[roundCount - 1].TimingGame)
-                ? upTime[i - 1] + Random.Range(0.1f, failTimeInterval)
-                : upTime[i - 1] + Random.Range(failTimeInterval, 2f);
+                ? upTime[i - 1] + Random.Range(0.1f, FailTimeInterval)
+                : upTime[i - 1] + Random.Range(FailTimeInterval, 2f);
         }
 
         var curUpSeq = 1; // 현재 일어나야 하는 순서
@@ -230,10 +230,11 @@ public class GameManager : Singleton<GameManager>
                 Debug.Log($"Player Up : {curTime}");
                 // **애니메이션
 
-                if (curTime - upTime[curUpSeq - 1] < failTimeInterval) // 시간이 겹침
+                if (curTime - upTime[curUpSeq - 1] < FailTimeInterval) // 시간이 겹침
                 {
                     // **애니메이션
                     Debug.Log($"겹칩! {curTime} {upTime[curUpSeq - 1]}");
+                    yield return new WaitForSeconds(3f);
                     EndGame(new[] {0, upSeq[curUpSeq - 1]});
                     yield break;
                 }
@@ -245,10 +246,11 @@ public class GameManager : Singleton<GameManager>
                 Debug.Log($"NPC{upSeq[curUpSeq - 1]} Up : {curTime} -> curUpSeq : {curUpSeq}");
                 // **애니메이션
 
-                if (upTime[curUpSeq] - upTime[curUpSeq - 1] < failTimeInterval && curUpSeq != 1) // 시간이 겹침
+                if (upTime[curUpSeq] - upTime[curUpSeq - 1] < FailTimeInterval && curUpSeq != 1) // 시간이 겹침
                 {
                     // **애니메이션
                     Debug.Log($"겹칩! {curTime} {upTime[curUpSeq - 1]}");
+                    yield return new WaitForSeconds(3f);
                     EndGame(new[] {upSeq[curUpSeq - 1], upSeq[curUpSeq - 2]});
                     yield break;
                 }
@@ -258,6 +260,7 @@ public class GameManager : Singleton<GameManager>
                 {
                     // ** 애니메이션
                     Debug.Log($"마지막! {upSeq[curUpSeq - 1]}");
+                    yield return new WaitForSeconds(3f);
                     EndGame(upSeq[curUpSeq]);
                     yield break;
                 }
@@ -266,6 +269,7 @@ public class GameManager : Singleton<GameManager>
                 {
                     // ** 애니메이션
                     Debug.Log("마지막! Player");
+                    yield return new WaitForSeconds(3f);
                     EndGame(0);
                     yield break;
                 }
@@ -275,8 +279,12 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
+    private const int DefaultValue = Int32.MinValue;
+    [HideInInspector] public int answerOfPlayerInClap369 = DefaultValue;
     private IEnumerator Clap369()
     {
+        Debug.Log("Clap369 Start");
+        _inRoundCanvas.DisableGameUI(GameType.Clap369);
         var turn = _nextFirstPlayer;
         var number = 0;
 
@@ -288,8 +296,14 @@ public class GameManager : Singleton<GameManager>
             if (turn == 0) // 플레이어
             {
                 // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+                _inRoundCanvas.EnableGameUI(GameType.Clap369);
+                _inRoundCanvas.SetClap369UI(number);
+                answerOfPlayerInClap369 = DefaultValue;
+                yield return new WaitUntil(() => answerOfPlayerInClap369 != DefaultValue);
 
-                if (true) isCorrect = true;
+                if (answerOfPlayerInClap369 != DefaultValue) isCorrect = true;  // 369룰 제대로 모름!
+
+                _inRoundCanvas.DisableGameUI(GameType.Clap369);
             }
             else // npc
             {
@@ -299,9 +313,11 @@ public class GameManager : Singleton<GameManager>
                     isCorrect = true;
                 }
             }
+            Debug.Log($"number : {number} -> turn : {turn} isCorrect : {isCorrect}");
 
             if (!isCorrect)
             {
+                yield return new WaitForSeconds(3f);
                 EndGame(turn);
                 yield break;
             }
@@ -311,8 +327,12 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
+    [HideInInspector] public int answerOfPlayerInBaskinRobbins31 = DefaultValue;
     private IEnumerator BaskinRobbins31()
     {
+        Debug.Log("BaskinRobbins31 Start");
+
+        _inRoundCanvas.DisableGameUI(GameType.BaskinRobbins31);
         var turn = _nextFirstPlayer;
         var number = 0;
 
@@ -323,8 +343,14 @@ public class GameManager : Singleton<GameManager>
             if (turn == 0) // 플레이어
             {
                 // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+                _inRoundCanvas.EnableGameUI(GameType.BaskinRobbins31);
+                _inRoundCanvas.SetBaskinRobbins31UI(number);
+                answerOfPlayerInBaskinRobbins31 = DefaultValue;
+                yield return new WaitUntil(() => answerOfPlayerInBaskinRobbins31 != DefaultValue);
 
-                add = 2; // 예시
+                add = answerOfPlayerInBaskinRobbins31;
+
+                _inRoundCanvas.DisableGameUI(GameType.BaskinRobbins31);
             }
             else // npc
             {
@@ -335,7 +361,7 @@ public class GameManager : Singleton<GameManager>
                     add = 1;
                 }
                 else if (leftNumber < playerCount + 3 &&
-                         RandomUtility.CalculateProbability(gameProb[roundCount - 1].Clap369))
+                         RandomUtility.CalculateProbability(gameProb[roundCount - 1].BaskinRobbins31))
                 {
                     add = 3;
                 }
@@ -350,10 +376,13 @@ public class GameManager : Singleton<GameManager>
 
                 // ** 애니메이션
             }
+            Debug.Log($"number : {number} -> turn : {turn} add : {add}");
+
 
             number += add;
             if (number >= 31)
             {
+                yield return new WaitForSeconds(3f);
                 EndGame(turn);
                 yield break;
             }
@@ -363,8 +392,11 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
+    [HideInInspector] public int clickCountInCleopatra = 0;
     private IEnumerator Cleopatra()
     {
+        Debug.Log("Cleopatra Start");
+        _inRoundCanvas.DisableGameUI(GameType.Cleopatra);
         var turn = _nextFirstPlayer;
         var goal = 5;
 
@@ -377,8 +409,14 @@ public class GameManager : Singleton<GameManager>
             if (turn == 0) // 플레이어
             {
                 // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+                _inRoundCanvas.EnableGameUI(GameType.Cleopatra);
+                _inRoundCanvas.SetCleopatraUI(goal);
+                clickCountInCleopatra = 0;
+                var curTime = Time.time;
+                yield return new WaitUntil(() => Time.time - curTime > soundLength || clickCountInCleopatra >= goal);
 
-                pitch = 2; // 예시
+                pitch = clickCountInCleopatra;
+                _inRoundCanvas.DisableGameUI(GameType.Cleopatra);
             }
             else // npc
             {
@@ -388,10 +426,13 @@ public class GameManager : Singleton<GameManager>
                 // ** 애니메이션
                 yield return new WaitForSeconds(soundLength);
             }
+            
+            Debug.Log($"goal : {goal} -> turn : {turn} pitch : {pitch}");
 
-            if (goal < pitch) goal = pitch;
+            if (goal < pitch) goal += 3;
             else
             {
+                yield return new WaitForSeconds(3f);
                 EndGame(turn);
                 yield break;
             }
@@ -401,12 +442,15 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
+    [HideInInspector] public bool isPlayerCorrectInSpinningBomb = false;
     private IEnumerator SpinningBomb()
     {
-        var turn = _nextFirstPlayer;
-        var goal = 5;
-        var oldTime = Time.time;
+        Debug.Log("SpinningBomb Start");
 
+        _inRoundCanvas.DisableGameUI(GameType.SpinningBomb);
+        var turn = _nextFirstPlayer;
+
+        var oldTime = Time.time;
         var limitTime = Random.Range(5f, 30f);
         while (Time.time - oldTime > limitTime)
         {
@@ -414,18 +458,27 @@ public class GameManager : Singleton<GameManager>
             if (turn == 0) // 플레이어
             {
                 // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
+                _inRoundCanvas.EnableGameUI(GameType.SpinningBomb);
+                _inRoundCanvas.SetSpinningBombUI(RandomUtility.CreateMathQuestion());
+                isPlayerCorrectInSpinningBomb = false;
+                yield return new WaitUntil(() => Time.time - oldTime > limitTime || isPlayerCorrectInSpinningBomb);
+
+                _inRoundCanvas.DisableGameUI(GameType.SpinningBomb);
             }
             else // npc
             {
                 var prob = gameProb[roundCount - 1].SpinningBomb;
-                // ** 애니메이션
                 yield return new WaitForSeconds(Random.Range(prob[0], prob[1]));
+                // ** 애니메이션
             }
+
+            Debug.Log($"turn : {turn}");
 
             turn = (++turn) % 8;
         }
 
-        EndGame(--turn);
+        yield return new WaitForSeconds(3f);
+        EndGame((--turn) % 8);
     }
     #endregion
 }
