@@ -302,6 +302,21 @@ MonoBehaviour:
   dontDestroyOnLoad: 1
   bgmSource: {fileID: 2371376187905437888}
   currentBGMClip: -1
-  bgmClips: []
-  sfxSource: {fileID: 2371376187905437888}
-  sfxClips: []
+  bgmClips:
+  - {fileID: 8300000, guid: 7ad42a7536809144c85dfa4f141d0bbb, type: 3}
+  - {fileID: 8300000, guid: d20ef8f481235b7438e348ee11850678, type: 3}
+  - {fileID: 8300000, guid: 1fac3b35f54f16e42bf9e17ff6810a5a, type: 3}
+  - {fileID: 8300000, guid: 5a172ec95296e0843ba558aed90993d3, type: 3}
+  - {fileID: 8300000, guid: 6229c407cb633ba44ad978aacab3008a, type: 3}
+  - {fileID: 8300000, guid: 939d4f431df01b045b912c4cdab83556, type: 3}
+  sfxSource: {fileID: 2371376188358100217}
+  sfxClips:
+  - {fileID: 8300000, guid: c5e1b22d6e540544e8e3d58ca283ca56, type: 3}
+  - {fileID: 8300000, guid: 206a300ff3106f14190e5eed1f957594, type: 3}
+  - {fileID: 8300000, guid: 2a712acce2a6126459f5319a5aee1819, type: 3}
+  - {fileID: 8300000, guid: 1fe54e6c5f7a9e94a8bd9f1e7c6cbe7a, type: 3}
+  - {fileID: 8300000, guid: eeddfc86527484842bfce5baa0ad939f, type: 3}
+  - {fileID: 8300000, guid: 9aeccd4c95e302341aa101aa4ecb6a8c, type: 3}
+  - {fileID: 8300000, guid: 2873c5c41ed298a43a0aa371f0435259, type: 3}
+  - {fileID: 8300000, guid: dc78175076f4e8a41b86999ad91121fc, type: 3}
+  - {fileID: 8300000, guid: 7fe81ff0167fd8244b88ae76ec3debba, type: 3}

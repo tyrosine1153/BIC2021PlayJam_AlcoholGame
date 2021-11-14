@@ -17,6 +17,7 @@ namespace UI
         [SerializeField] private Image backGroundImage;
         [SerializeField] private Image fadeImage;
         [SerializeField] private Text roundText;
+        [SerializeField] private Image[] gameTitles;
         
         [SerializeField] private GameObject[] gameUIs;
 
@@ -32,10 +33,10 @@ namespace UI
 
         public void OnInitRound(int roundCount)
         {
-            // backGroundImage.sprite = backGrounds[roundCount - 1];
+            backGroundImage.sprite = backGrounds[roundCount - 1];
             roundText.text = $"{roundCount} Round";
             
-            StartCoroutine(FadeIn());
+            //StartCoroutine(FadeIn());
         }
 
         public IEnumerator FadeIn()
@@ -56,7 +57,19 @@ namespace UI
         public void EnableGameUI(GameType gameType)
         {
             gameUIs[(int)gameType].SetActive(true);
+            gameTitles[(int) gameType].DOFade(1f, 0f);
+            gameTitles[(int) gameType].rectTransform.DOScale(0f, 0f);
             // 대충 시작하는 애니메이션
+        }
+
+        public void EnableGameTitle(int gameType)
+        {
+            var sequence = DOTween.Sequence();
+            sequence.AppendCallback(() => gameTitles[gameType].gameObject.SetActive(true))
+                .Append(gameTitles[gameType].rectTransform.DOScale(1f, 1f))
+                .AppendInterval(1f)
+                .Append(gameTitles[gameType].DOFade(0f, 1f))
+                .AppendCallback(() => gameTitles[gameType].gameObject.SetActive(false));
         }
 
         public void DisableGameUI(GameType gameType)

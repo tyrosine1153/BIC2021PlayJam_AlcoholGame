@@ -23,6 +23,7 @@ namespace UI
 
         public void OnClickStartButton()
         {
+            AudioManager.Instance.PlaySFX(SFXType.Start);
             _storyCoroutine = StartCoroutine(ShowStory());
         }
 

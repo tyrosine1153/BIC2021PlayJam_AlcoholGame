@@ -4,12 +4,26 @@ using UnityEngine;
 public enum BGMType
 {
     None = -1,
-    Title
+    Title,
+    Round1,
+    Round2,
+    Round3,
+    Fail,
+    Success
 }
 
 public enum SFXType
 {
     None = -1,
+    Start,
+    Correct,
+    Wrong,
+    Drink,
+    Bomb,
+    Clap369,
+    Drum,
+    ClapClap,
+    Cleopatra
 }
 
 public class AudioManager : Singleton<AudioManager>
@@ -37,6 +51,7 @@ public class AudioManager : Singleton<AudioManager>
         if (type == BGMType.None) return; 
         
         bgmSource.clip = bgmClips[(int) type];
+        bgmSource.loop = true;
         bgmSource.Play();
 
         currentBGMClip = type;
@@ -54,6 +69,7 @@ public class AudioManager : Singleton<AudioManager>
         if (type == SFXType.None) return; 
 
         sfxSource.clip = sfxClips[(int) type];
+        sfxSource.loop = false;
         sfxSource.Play();
     }
     
