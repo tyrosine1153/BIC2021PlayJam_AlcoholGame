@@ -123,6 +123,17 @@ public class GameManager : Singleton<GameManager>
         
         // _inRoundCanvas.EnableGameUI(currentGameType);
 
+        var str = "- ";
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (!players[i].IsFail)
+            {
+                str += $"{i + 1} 번, ";
+            }
+        }
+        str += "남았어!";
+        _inRoundCanvas.Subtitle(str);
+        
         //StartCoroutine(_inRoundCanvas.FadeIn());
         AudioManager.Instance.PlaySFX(SFXType.Drum);
         _inRoundCanvas.EnableGameTitle(gameTypeIndex);
@@ -161,18 +172,22 @@ public class GameManager : Singleton<GameManager>
 
         _inRoundCanvas.DisableGameUI(currentGameType);
 
+        var str = "";
         foreach (var index in failPlayers)
         {
             players[index].CurrentAlcoholCount++;
             // **벌칙 애니메이션
+            _inRoundCanvas.DrinkAnim(index);
             AudioManager.Instance.PlaySFX(SFXType.Drink);
 
             Debug.Log($"FailPlayer : {index}, Alcohol : {players[index].CurrentAlcoholCount} / {players[index].AlcoholCapacity}");
+            str += (index+1) + ", ";
             if (players[index].AlcoholCapacity <= players[index].CurrentAlcoholCount)  // 도전자 탈락
             {
                 players[index].IsFail = true;
                 playerCount--;
                 // **탈락 애니메이션
+                _inRoundCanvas.TrumbleAnim(index);
 
                 if (index == 0)
                 {
@@ -188,6 +203,8 @@ public class GameManager : Singleton<GameManager>
                 // **플레이어 주량 패널티
             }
         }
+        _inRoundCanvas.Subtitle($"- {str} 번! 벌칙!");
+
 
         // 잠시 후 새 게임 시작, 페이드 아웃
         _nextFirstPlayer = failPlayers[Random.Range(0, failPlayers.Length)];
@@ -243,12 +260,15 @@ public class GameManager : Singleton<GameManager>
         _inRoundCanvas.EnableGameUI(currentGameType);
         while (true)
         {
+            var str = "";
             curTime += Time.deltaTime;
             if (isPlayerUpInTimingGame) // 플레이어가 일어남
             {
                 AudioManager.Instance.PlaySFX(SFXType.Correct);
                 Debug.Log($"Player Up : {curTime}");
                 // **애니메이션
+                _inRoundCanvas.StandUpAnim(0);
+                _inRoundCanvas.Subtitle($"1 : {curTime}!");
 
                 if (curTime - upTime[curUpSeq - 1] < FailTimeInterval) // 시간이 겹침
                 {
@@ -268,15 +288,25 @@ public class GameManager : Singleton<GameManager>
                 AudioManager.Instance.PlaySFX(SFXType.Correct);
                 Debug.Log($"NPC {upSeq[curUpSeq - 1]} Up : {curTime} -> curUpSeq : {curUpSeq}");
                 // **애니메이션
-
+                _inRoundCanvas.StandUpAnim(upSeq[curUpSeq - 1]);
+                
                 if (upTime[curUpSeq] - upTime[curUpSeq - 1] < FailTimeInterval && curUpSeq != 1) // 시간이 겹침
                 {
                     AudioManager.Instance.PlaySFX(SFXType.Wrong);
                     // **애니메이션
                     Debug.Log($"겹칩! {curTime} {upTime[curUpSeq - 1]}");
+                    str += $"- {upSeq[curUpSeq - 1]} : {curUpSeq}!\n";
+                    str += $"- {upSeq[curUpSeq-1]}번과 {upSeq[curUpSeq - 1]}번이 겹쳤어!";
+                        
+                    _inRoundCanvas.Subtitle(str);
                     yield return new WaitForSeconds(3f);
+                    
                     EndGame(new[] {upSeq[curUpSeq - 1], upSeq[curUpSeq - 2]});
                     yield break;
+                }
+                else
+                {
+                    _inRoundCanvas.Subtitle($"- {upSeq[curUpSeq - 1]} : {curUpSeq}!");
                 }
 
                 curUpSeq++;
@@ -285,6 +315,9 @@ public class GameManager : Singleton<GameManager>
                     AudioManager.Instance.PlaySFX(SFXType.Wrong);
                     // ** 애니메이션
                     Debug.Log($"마지막! {upSeq[curUpSeq - 1]}");
+                    str += $"- {upSeq[curUpSeq - 1]}번이 마지막이야!";
+                        
+                    _inRoundCanvas.Subtitle(str);
                     yield return new WaitForSeconds(3f);
                     EndGame(upSeq[curUpSeq - 1]); // 마지막 인덱스 +1번째 참조해서 인덱스 아웃 오브 레인지 떠서 고쳤음
                     yield break;
@@ -295,12 +328,16 @@ public class GameManager : Singleton<GameManager>
                     AudioManager.Instance.PlaySFX(SFXType.Wrong);
                     // ** 애니메이션
                     Debug.Log("마지막! Player");
+                    str += "- 0번이 마지막이야!";
+                        
+                    _inRoundCanvas.Subtitle(str);
                     yield return new WaitForSeconds(3f);
                     EndGame(0);
                     yield break;
                 }
             }
 
+            _inRoundCanvas.Subtitle(str);
             yield return null;
         }
     }
@@ -317,6 +354,7 @@ public class GameManager : Singleton<GameManager>
 
         while (true)
         {
+            var str = "";
             if (players[turn].IsFail)
             {
                 turn = (++turn) % 8;
@@ -347,17 +385,21 @@ public class GameManager : Singleton<GameManager>
                 }
                 AudioManager.Instance.PlaySFX(SFXType.Clap369);
             }
+            _inRoundCanvas.ClapAnim(turn);
             Debug.Log($"number : {number} -> turn : {turn} isCorrect : {isCorrect}");
+            str += $"- {turn+1} : {number + (isCorrect ? 0 : Random.Range(-1,2))}!";
 
             if (!isCorrect)
             {
                 AudioManager.Instance.PlaySFX(SFXType.Wrong);
+                _inRoundCanvas.Subtitle(str);
                 yield return new WaitForSeconds(3f);
                 EndGame(turn);
                 yield break;
             }
 
             turn = (++turn) % 8;
+            _inRoundCanvas.Subtitle(str);
             yield return new WaitForSeconds(3f);
         }
     }
@@ -373,6 +415,7 @@ public class GameManager : Singleton<GameManager>
 
         while (true)
         {
+            var str = "";
             if (players[turn].IsFail)
             {
                 turn = (++turn) % 8;
@@ -417,19 +460,26 @@ public class GameManager : Singleton<GameManager>
 
                 // ** 애니메이션
             }
+            _inRoundCanvas.ShoutAnim(turn);
             Debug.Log($"number : {number} -> turn : {turn} add : {add}");
-
-
+            str += $"- {turn+1} : ";
+            for (int i = 1; i <= add; i++)
+            {
+                str += $"{number + i}! ";
+            }
+            
             number += add;
             if (number >= 31)
             {
                 AudioManager.Instance.PlaySFX(SFXType.Wrong);
+                _inRoundCanvas.Subtitle(str);
                 yield return new WaitForSeconds(3f);
                 EndGame(turn);
                 yield break;
             }
 
             turn = (++turn) % 8;
+            _inRoundCanvas.Subtitle(str);
             yield return new WaitForSeconds(3f);
         }
     }
@@ -446,6 +496,7 @@ public class GameManager : Singleton<GameManager>
         var soundLength = 3f;
         while (true)
         {
+            var str = "";
             if (players[turn].IsFail)
             {
                 turn = (++turn) % 8;
@@ -455,6 +506,7 @@ public class GameManager : Singleton<GameManager>
             var pitch = 0;
 
             AudioManager.Instance.PlaySFX(SFXType.Cleopatra);
+            _inRoundCanvas.ClapAnim(turn);
             if (turn == 0) // 플레이어
             {
                 // -- 버튼 생성 -- 클릭까지 대기 -- 클릭 값에 따라 정오답 여부 판별
@@ -477,7 +529,8 @@ public class GameManager : Singleton<GameManager>
             }
             
             Debug.Log($"goal : {goal} -> turn : {turn} pitch : {pitch}");
-
+            str += $"- {turn+1} : {pitch}/{goal}";
+            
             if (goal <= pitch)
             {
                 goal += 3;
@@ -487,12 +540,14 @@ public class GameManager : Singleton<GameManager>
             {
                 AudioManager.Instance.PlaySFX(SFXType.Wrong);
 
+                _inRoundCanvas.Subtitle(str);
                 yield return new WaitForSeconds(3f);
                 EndGame(turn);
                 yield break;
             }
 
             turn = (++turn) % 8;
+            _inRoundCanvas.Subtitle(str);
             yield return new WaitForSeconds(3f);
         }
     }
@@ -515,6 +570,7 @@ public class GameManager : Singleton<GameManager>
                 continue;
             }
             AudioManager.Instance.PlaySFX(SFXType.Bomb);
+            _inRoundCanvas.BombAnim(turn);
 
             if (turn == 0) // 플레이어
             {
@@ -534,11 +590,13 @@ public class GameManager : Singleton<GameManager>
             }
 
             Debug.Log($"turn : {turn}");
-
+            _inRoundCanvas.Subtitle($"- {(turn + 2) % 8}번 받았어");
+            
             turn = (++turn) % 8;
         }
 
         AudioManager.Instance.PlaySFX(SFXType.Wrong);
+        _inRoundCanvas.Subtitle($"- 시간 끝! {(turn + 8) % 8}번 걸렸어!");
         yield return new WaitForSeconds(3f);
         EndGame((--turn + 8) % 8);
     }

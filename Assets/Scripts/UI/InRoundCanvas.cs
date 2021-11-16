@@ -31,6 +31,17 @@ namespace UI
         [SerializeField] private Text[] spinningBombButtonTexts;
         [SerializeField] private Button[] spinningBombButtons;
 
+        [SerializeField] private Text subtitleText;
+        
+        [Header("Animations")] 
+        [SerializeField] private Animator[] playerAnimators;
+        [SerializeField] private Animator bombAnimator;
+        private static readonly int StandUp = Animator.StringToHash("StandUp");
+        private static readonly int Clap = Animator.StringToHash("Clap");
+        private static readonly int Shout = Animator.StringToHash("Shout");
+        private static readonly int Drink = Animator.StringToHash("Drink");
+        private static readonly int IsFail = Animator.StringToHash("IsFail");
+        
         public void OnInitRound(int roundCount)
         {
             backGroundImage.sprite = backGrounds[roundCount - 1];
@@ -135,6 +146,9 @@ namespace UI
         }
 
         private int _rightAnswerInSpinningBomb;
+        private static readonly int Move = Animator.StringToHash("Move");
+        private static readonly int Index = Animator.StringToHash("Index");
+
         public void SetSpinningBombUI(Tuple<string, int> question)
         {
             spinningBombQuestionText.text = question.Item1;
@@ -158,6 +172,42 @@ namespace UI
             if (_rightAnswerInSpinningBomb != answer) return;
 
             GameManager.Instance.isPlayerCorrectInSpinningBomb = true;
+        }
+        
+        public void StandUpAnim(int playerIndex)
+        {
+            playerAnimators[playerIndex].SetTrigger(StandUp);
+        }
+
+        public void ClapAnim(int playerIndex)
+        {
+            playerAnimators[playerIndex].SetTrigger(Clap);
+        }
+    
+        public void ShoutAnim(int playerIndex)
+        {
+            playerAnimators[playerIndex].SetTrigger(Shout);
+        }
+    
+        public void DrinkAnim(int playerIndex)
+        {
+            playerAnimators[playerIndex].SetTrigger(Drink);
+        }
+    
+        public void TrumbleAnim(int playerIndex)
+        {
+            playerAnimators[playerIndex].SetBool(IsFail, true);
+        }
+
+        public void BombAnim(int playerIndex)
+        {
+            bombAnimator.SetTrigger(Move);
+            bombAnimator.SetInteger(Index,playerIndex);
+        }
+
+        public void Subtitle(string str)
+        {
+            subtitleText.text = str;
         }
     }
 }
