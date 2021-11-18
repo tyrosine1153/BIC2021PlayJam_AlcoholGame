@@ -116,9 +116,9 @@ public class GameManager : Singleton<GameManager>
 
     private void StartGame()
     {
-        // 인원이 2명 이하일 경우 눈치게임은 제외
+        // 인원이 2명 이하일 경우 눈치게임은 제외 + 오류때문에 잠깐 눈치게임은 제외
         var gameTypeIndex 
-            = Random.Range(playerCount > 2 ? 0 : 1, Enum.GetValues(typeof(GameType)).Length);
+            = Random.Range(/*playerCount > 2 ? 0 : */ 1, Enum.GetValues(typeof(GameType)).Length);
         currentGameType = (GameType) gameTypeIndex;
         
         // _inRoundCanvas.EnableGameUI(currentGameType);
