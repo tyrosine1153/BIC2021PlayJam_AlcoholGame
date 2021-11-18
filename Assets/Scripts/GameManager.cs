@@ -80,7 +80,7 @@ public class GameManager : Singleton<GameManager>
             players[i] = new Player(Random.Range(roundCount, roundCount + 2));
         }
 
-        Invoke(nameof(DelayedStartRound), 1f);
+        Invoke(nameof(DelayedStartRound), 0.5f);
     }
 
     private void DelayedStartRound()
